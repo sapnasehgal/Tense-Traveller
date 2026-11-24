@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tense Traveller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: a sticky XP bar on top, one centred column, and a three-zone timeline (before then / then / up to now) as the colour code for every tense. */
+  --bg:#eef1ff; --surface:#ffffff; --ink:#14213d; --muted:#56627f; --line:#d3daf5;
+  --accent:#5b3df5; --accent-ink:#ffffff; --gold:#ffc83d;
+  --good:#0f8f68; --good-bg:#dcf6ec; --bad:#d6343a; --bad-bg:#ffe4e5;
+  --pperf:#7c4dff; --psimple:#0b86d6; --prperf:#e86f00;
+  --display:'Bowlby One','Arial Black',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1530; --surface:#19224a; --ink:#eef1ff; --muted:#a6b1d8; --line:#2c3870;
+    --accent:#9a87ff; --accent-ink:#0e1530; --gold:#ffcf4d;
+    --good:#43dba7; --good-bg:#12392f; --bad:#ff8085; --bad-bg:#46202a;
+    --pperf:#ab90ff; --psimple:#4db8ff; --prperf:#ffa340;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1530; --surface:#19224a; --ink:#eef1ff; --muted:#a6b1d8; --line:#2c3870;
+  --accent:#9a87ff; --accent-ink:#0e1530; --gold:#ffcf4d;
+  --good:#43dba7; --good-bg:#12392f; --bad:#ff8085; --bad-bg:#46202a;
+  --pperf:#ab90ff; --psimple:#4db8ff; --prperf:#ffa340;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:500 17px/1.5 var(--body);-webkit-font-smoothing:antialiased;min-height:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0}
+.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:2px solid var(--line)}
+.topin{max-width:860px;margin:auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font:400 20px/1 var(--display);color:var(--accent);background:none;border:0;padding:6px 0;letter-spacing:.3px}
+.lv{min-width:150px;flex:0 1 240px}
+.lvl{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);font-weight:700}
+.lvl b{color:var(--ink)}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pperf),var(--psimple),var(--prperf));border-radius:99px;transition:width .5s}
+main{max-width:860px;margin:auto;padding:20px 16px 56px}
+.link{background:none;border:0;color:var(--accent);font-weight:800;padding:6px 0}
+.h1{font:400 clamp(30px,6vw,46px)/1.05 var(--display);margin:6px 0 10px}
+.lead{color:var(--muted);margin:0 0 20px;max-width:60ch}
+.namerow{display:flex;align-items:center;gap:10px;margin:0 0 22px;color:var(--muted);font-weight:700;flex-wrap:wrap}
+.namerow input{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;width:180px;font-weight:700}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.zone{background:var(--surface);border-radius:16px;padding:12px 14px;border-top:8px solid var(--c);display:flex;flex-direction:column;gap:2px;min-width:0}
+.zone small{font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--c)}
+.zone b{font-size:18px;line-height:1.15}
+.zone code{font:700 13px var(--body);color:var(--muted)}
+.zone em{font-style:normal;font-weight:700;margin-top:4px}
+.zone.pp{--c:var(--pperf)}.zone.ps{--c:var(--psimple)}.zone.pr{--c:var(--prperf)}
+.axis{position:relative;height:30px;margin:0 0 26px}
+.axis:before{content:"";position:absolute;left:0;right:46px;top:13px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--pperf),var(--psimple),var(--prperf))}
+.axis span{position:absolute;right:0;top:0;font:400 13px/30px var(--display);background:var(--ink);color:var(--bg);padding:0 12px;border-radius:99px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:16px;text-align:left;display:flex;flex-direction:column;gap:6px;border-left:10px solid var(--c,var(--accent));transition:transform .15s,border-color .15s}
+.card:hover{transform:translateY(-3px);border-color:var(--c,var(--accent))}
+.card b{font:400 20px/1.1 var(--display)}
+.card span{color:var(--muted);font-size:15px}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;margin-top:auto;padding-top:8px;color:var(--ink)}
+.stars{letter-spacing:2px;color:var(--gold);font-size:18px;-webkit-text-stroke:.6px rgba(0,0,0,.25)}
+.stars .off{color:var(--line);-webkit-text-stroke:0}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:14px;padding:12px 24px;font-weight:800;font-size:17px;box-shadow:0 4px 0 rgba(0,0,0,.22)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.22)}
+.btn.sm{padding:6px 14px;font-size:14px;box-shadow:none}
+.btn.alt{background:var(--surface);color:var(--ink);border:2px solid var(--line);box-shadow:none}
+.btn.again{background:var(--bad-bg);color:var(--bad);box-shadow:none;border:2px solid var(--bad)}
+.btn.got{background:var(--good-bg);color:var(--good);box-shadow:none;border:2px solid var(--good)}
+.hear{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:800;display:inline-flex;gap:8px;align-items:center}
+.hear svg{width:18px;height:18px;fill:currentColor}
+.hud{display:flex;align-items:center;gap:14px;margin-bottom:14px;font-weight:800;font-size:15px}
+.prog{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.prog span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.streak{color:var(--prperf);white-space:nowrap}
+.qcard{background:var(--surface);border-radius:22px;padding:22px;border:2px solid var(--line);border-top:10px solid var(--c,var(--accent))}
+.qtag{display:inline-block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--c,var(--accent));margin-bottom:8px}
+.prompt{font:700 clamp(21px,4.4vw,28px)/1.3 var(--body);margin-bottom:18px}
+.gap{display:inline-block;min-width:64px;border-bottom:4px solid var(--accent);margin:0 4px;transform:translateY(-3px)}
+.bigverb{font:400 clamp(44px,12vw,72px)/1 var(--display);margin:4px 0 18px;color:var(--c,var(--accent))}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:13px 14px;font-weight:700;font-size:18px}
+.opt kbd{font:800 13px var(--body);background:var(--surface);border:2px solid var(--line);border-radius:8px;padding:1px 8px;color:var(--muted)}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled,.chunk:disabled{cursor:default}
+.opt.good,.chunk.good{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.opt.bad,.chunk.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.sentence{display:flex;flex-wrap:wrap;gap:8px}
+.chunk{background:var(--bg);border:2px dashed var(--line);border-radius:12px;padding:10px 14px;font-weight:700;font-size:19px}
+.chunk:hover:not(:disabled){border-color:var(--accent);border-style:solid}
+.fields{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.field{flex:1 1 180px;display:flex;flex-direction:column;gap:4px;font-weight:800;font-size:14px;color:var(--muted)}
+.field input{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:12px 14px;font-size:22px;font-weight:700;color:var(--ink);min-width:0}
+.field input:focus{border-color:var(--accent);outline:none}
+.field input.good{border-color:var(--good);background:var(--good-bg)}
+.field input.bad{border-color:var(--bad);background:var(--bad-bg)}
+.fb{margin-top:16px;border-radius:18px;padding:16px 18px;border:2px solid;animation:rise .25s ease-out}
+.fb.good{background:var(--good-bg);border-color:var(--good)}
+.fb.bad{background:var(--bad-bg);border-color:var(--bad)}
+.fbh{display:flex;justify-content:space-between;align-items:center;font-size:20px}
+.fb.good .fbh strong{color:var(--good)}.fb.bad .fbh strong{color:var(--bad)}
+.xp{font-weight:800;font-size:14px;background:var(--gold);color:#14213d;border-radius:99px;padding:2px 12px}
+.why{margin:6px 0 4px}
+.why p{margin:6px 0}
+.forms{font-size:22px;font-weight:800}
+.ex{color:var(--ink)}
+.note{font-size:15px;color:var(--muted)}
+mark.v{background:transparent;color:var(--accent);font-weight:800;border-bottom:3px solid var(--gold)}
+.fbrow{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:10px;flex-wrap:wrap}
+.tlf{margin:8px 0 0}
+.tlf svg{width:100%;max-width:360px;height:auto;display:block}
+.tl-axis{stroke:var(--line);stroke-width:3;fill:none}.tl-arrow{fill:none;stroke:var(--line);stroke-width:3;stroke-linecap:round}
+.tl-now{stroke:var(--ink);stroke-width:2;stroke-dasharray:3 3}
+.tl-t{font:700 11px var(--body);fill:var(--muted)}.tl-t.now{fill:var(--ink)}
+.score{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 18px}
+.big{font:400 clamp(50px,14vw,86px)/1 var(--display)}
+.stars.lg{font-size:40px}
+.review{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 16px;margin:14px 0}
+.review h3{font-size:17px;margin-bottom:6px}
+.review li{margin:4px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.fc{background:var(--surface);border:2px solid var(--line);border-top:10px solid var(--c,var(--pperf));border-radius:24px;padding:26px 22px;min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px;animation:flip .28s ease-out}
+.fc small{font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.fcv{font:400 clamp(48px,14vw,84px)/1 var(--display);color:var(--pperf)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.cols div{background:var(--bg);border-radius:14px;padding:10px 6px;min-width:0}
+.cols small{display:block;font-size:11px}
+.cols b{font:400 clamp(20px,5.2vw,32px)/1.15 var(--display);overflow-wrap:anywhere}
+.cols div:nth-child(2) b{color:var(--psimple)}.cols div:nth-child(3) b{color:var(--prperf)}.cols div:nth-child(1) b{color:var(--pperf)}
+.cols.two{grid-template-columns:repeat(2,1fr)}
+.fcx{text-align:left;width:100%;max-width:520px}
+.fcx p{margin:4px 0}
+.ctl{display:flex;gap:12px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.pill{display:inline-block;font-weight:800;font-size:13px;padding:2px 12px;border-radius:99px;background:var(--bg);border:2px solid var(--line);margin:2px 4px 2px 0}
+.sec{background:var(--surface);border:2px solid var(--line);border-left:10px solid var(--c);border-radius:18px;padding:16px 18px;margin:14px 0}
+.sec h2{font:400 22px/1.1 var(--display);color:var(--c);margin-bottom:4px}
+.sec p{margin:6px 0}
+.sec code{font:800 15px var(--body);background:var(--bg);padding:2px 8px;border-radius:8px}
+.sec ul{margin:6px 0;padding-left:20px}
+.sec li{margin:3px 0}
+.mini{width:100%;border-collapse:collapse;font-size:15px}
+.mini td,.mini th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:99px;font-weight:800;opacity:0;pointer-events:none;transition:.3s;z-index:9;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flip{from{opacity:.2;transform:rotateX(70deg)}to{opacity:1;transform:none}}
+@media (max-width:520px){
+  .zone{padding:10px}.zone b{font-size:15px}.zone code{font-size:11px}.zone em{font-size:13px}
+  .lv{min-width:120px}.qcard{padding:18px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s);};
+var app=$('#app');
+var KEY='tenseTraveller.v2';
+var ALL={profiles:{},last:''};
+var S=null;
+function blank(n){return {name:n,xp:0,cards:{},best:{}};}
+function clean(o,n){
+  var p=blank(n);
+  p.xp=Math.max(0,Math.min(1000000,Math.floor(+o.xp||0)));
+  var c=o.cards||{},b=o.best||{};
+  Object.keys(c).slice(0,300).forEach(function(k){var v=Math.floor(+c[k]);if(k.length<=30&&v>=0&&v<=3)p.cards[k]=v;});
+  ['vault','duel','time','hunt','sound','boss'].forEach(function(k){var v=Math.floor(+b[k]);if(v>=0&&v<=3)p.best[k]=v;});
+  return p;
+}
+try{
+  var r2=localStorage.getItem(KEY);
+  if(r2){var A=JSON.parse(r2);Object.keys(A.profiles||{}).forEach(function(k){ALL.profiles[k]=clean(A.profiles[k],k);});ALL.last=A.last||'';}
+  else{var r1=localStorage.getItem('tenseTraveller.v1');if(r1){var o1=JSON.parse(r1);if(o1.xp>0||o1.name){var nm=(o1.name||'Traveller').slice(0,20);ALL.profiles[nm]=clean(o1,nm);ALL.last=nm;}}}
+}catch(e){}
+function save(){
+  if(S){ALL.profiles[S.name]=S;ALL.last=S.name;}
+  try{localStorage.setItem(KEY,JSON.stringify(ALL));}catch(e){}
+}
+function makeCode(){return 'TT1-'+btoa(unescape(encodeURIComponent(JSON.stringify({n:S.name,x:S.xp,c:S.cards,b:S.best}))));}
+function readCode(str){
+  str=(str||'').replace(/\s+/g,'');
+  if(str.indexOf('TT1-')!==0)return null;
+  var o;try{o=JSON.parse(decodeURIComponent(escape(atob(str.slice(4)))));}catch(e){return null;}
+  if(!o||typeof o.n!=='string')return null;
+  var n=o.n.replace(/[<>&"]/g,'').trim().slice(0,20);
+  if(!n)return null;
+  return clean({xp:o.x,cards:o.c,best:o.b},n);
+}
+function login(name){S=ALL.profiles[name];save();go('home');}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function fmt(s){return s.replace(/\*(.+?)\*/g,'<mark class="v">$1</mark>');}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function pick(a,n){return shuffle(a).slice(0,n);}
+function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+var HAS_TTS=('speechSynthesis' in window)&&(typeof SpeechSynthesisUtterance!=='undefined');
+function say(t){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=.8;speechSynthesis.speak(u);}catch(e){}}
+var SPK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>';
+function hearBtn(t){return HAS_TTS?'<button class="hear" data-act="say" data-say="'+esc(t)+'">'+SPK+'Hear it</button>':'';}
+
+/* ---------- DATA ---------- */
+var FAMILIES={
+  aaa:{t:'Same, same, same',d:'cut, cut, cut'},
+  abb:{t:'Two the same',d:'buy, bought, bought'},
+  aba:{t:'Base comes back',d:'run, ran, run'},
+  abc:{t:'All different',d:'go, went, gone'}
+};
+// base, past simple, past participle, family, example (past simple), example (present perfect), optional note
+var IRR=[
+['cut','cut','cut','aaa','Dad *cut* the grass.','I have *cut* my finger.'],
+['put','put','put','aaa','She *put* her bag on the chair.','Who has *put* my pencil case here?'],
+['hit','hit','hit','aaa','He *hit* the ball very hard.','The ball has *hit* the window!'],
+['let','let','let','aaa','Mum *let* me stay up late.','She has never *let* me borrow her bike.'],
+['set','set','set','aaa','We *set* the table for dinner.','He has *set* a new school record.'],
+['shut','shut','shut','aaa','I *shut* the door quietly.','Someone has *shut* the window.'],
+['hurt','hurt','hurt','aaa','I *hurt* my knee playing football.','Have you *hurt* yourself?'],
+['cost','cost','cost','aaa','The trainers *cost* sixty euros.','That game has *cost* me all my pocket money.'],
+['read','read','read','aaa','She *read* the whole book in a day.','I have *read* that book three times.','The spelling does not change, but the past forms sound like "red".'],
+['quit','quit','quit','aaa','He *quit* the team last year.','She has *quit* eating sweets.'],
+['spread','spread','spread','aaa','The news *spread* fast.','The fire has *spread* to the forest.'],
+['bring','brought','brought','abb','She *brought* her dog to school.','Have you *brought* your book?'],
+['buy','bought','bought','abb','I *bought* a new bag yesterday.','He has *bought* tickets for the concert.'],
+['catch','caught','caught','abb','The goalkeeper *caught* the ball.','They have *caught* a big fish.'],
+['teach','taught','taught','abb','Ms Lopez *taught* us a new song.','She has *taught* English for ten years.'],
+['think','thought','thought','abb','I *thought* the test was easy.','I have *thought* about it a lot.'],
+['build','built','built','abb','They *built* a snowman.','My uncle has *built* a house.'],
+['make','made','made','abb','Grandma *made* pancakes.','We have *made* a poster.'],
+['say','said','said','abb','He *said* hello and smiled.','She has *said* sorry twice.'],
+['pay','paid','paid','abb','Dad *paid* for lunch.','I have already *paid* for the tickets.'],
+['sell','sold','sold','abb','They *sold* their old car.','The shop has *sold* all the bikes.'],
+['tell','told','told','abb','She *told* us a funny story.','I have *told* you three times!'],
+['find','found','found','abb','I *found* a coin in the park.','Have you *found* your keys?'],
+['have','had','had','abb','We *had* pizza for dinner.','I have *had* this phone for a year.'],
+['hear','heard','heard','abb','I *heard* a strange noise.','Have you *heard* the news?'],
+['hold','held','held','abb','He *held* the baby carefully.','She has *held* the record since 2022.'],
+['keep','kept','kept','abb','She *kept* the letter in a box.','I have *kept* all your messages.'],
+['leave','left','left','abb','They *left* the party early.','The train has already *left*.'],
+['lend','lent','lent','abb','I *lent* him my bike.','Have you *lent* her your pen?'],
+['lose','lost','lost','abb','We *lost* the match 2-1.','I have *lost* my glasses.'],
+['meet','met','met','abb','I *met* Sam at the park.','We have *met* before, haven\'t we?'],
+['send','sent','sent','abb','She *sent* me a message.','I have *sent* the email.'],
+['sit','sat','sat','abb','He *sat* next to me.','We have *sat* here for an hour.'],
+['sleep','slept','slept','abb','The baby *slept* all night.','I haven\'t *slept* well this week.'],
+['spend','spent','spent','abb','We *spent* the day at the beach.','He has *spent* all his money.'],
+['stand','stood','stood','abb','She *stood* at the door.','They have *stood* in line for hours.'],
+['win','won','won','abb','Our team *won* the final.','She has *won* three medals.'],
+['feel','felt','felt','abb','I *felt* nervous before the test.','He has *felt* ill all day.'],
+['get','got','got/gotten','abb','I *got* a present for my birthday.','She has *got* a new puppy.','British English uses "got". American English often uses "gotten".'],
+['understand','understood','understood','abb','Nobody *understood* the question.','Have you *understood* the rule?'],
+['fight','fought','fought','abb','The two cats *fought* all night.','They have *fought* again.'],
+['dig','dug','dug','abb','The dog *dug* a big hole.','The kids have *dug* a hole in the sand.'],
+['become','became','become','aba','She *became* a doctor.','He has *become* very tall.'],
+['come','came','come','aba','My cousin *came* on Saturday.','Spring has *come*.'],
+['run','ran','run','aba','I *ran* to school this morning.','She has *run* five kilometres.'],
+['be','was/were','been','abc','I *was* tired and we *were* late.','I have *been* to London twice.','Use "was" with I, he, she, it. Use "were" with you, we, they.'],
+['begin','began','begun','abc','The lesson *began* at nine.','The film has already *begun*.'],
+['break','broke','broken','abc','I *broke* my phone screen.','Who has *broken* the window?'],
+['choose','chose','chosen','abc','She *chose* the red dress.','Have you *chosen* a name?'],
+['do','did','done','abc','He *did* his homework.','I have *done* it!'],
+['draw','drew','drawn','abc','She *drew* a dragon.','He has *drawn* a map.'],
+['drink','drank','drunk','abc','I *drank* two glasses of water.','Have you *drunk* your milk?'],
+['drive','drove','driven','abc','Dad *drove* us to school.','She has never *driven* a bus.'],
+['eat','ate','eaten','abc','We *ate* paella for lunch.','Have you *eaten* yet?'],
+['fall','fell','fallen','abc','He *fell* off his bike.','The leaves have *fallen*.'],
+['fly','flew','flown','abc','We *flew* to Rome.','I have never *flown* in a helicopter.'],
+['forget','forgot','forgotten','abc','I *forgot* my lunch.','Have you *forgotten* your password?'],
+['give','gave','given','abc','She *gave* me a present.','He has *given* away his old toys.'],
+['go','went','gone','abc','We *went* to the beach.','Mum has *gone* to the shop.','"Has gone" means she is not here now. "Has been" means she went and came back.'],
+['grow','grew','grown','abc','The plant *grew* very fast.','You have *grown* so much!'],
+['know','knew','known','abc','I *knew* the answer.','We have *known* each other for years.'],
+['ride','rode','ridden','abc','She *rode* a horse.','I have never *ridden* a camel.'],
+['ring','rang','rung','abc','The bell *rang* at nine.','The phone has *rung* three times.'],
+['see','saw','seen','abc','I *saw* a rainbow.','Have you *seen* my hat?'],
+['sing','sang','sung','abc','They *sang* a song.','She has *sung* in a choir.'],
+['speak','spoke','spoken','abc','He *spoke* very quietly.','We have *spoken* to the teacher.'],
+['steal','stole','stolen','abc','Someone *stole* my bike.','The thief has *stolen* my bike.'],
+['swim','swam','swum','abc','We *swam* in the sea.','I have *swum* fifty metres.'],
+['take','took','taken','abc','She *took* a photo.','Who has *taken* my pen?'],
+['throw','threw','thrown','abc','He *threw* the ball.','She has *thrown* it away.'],
+['wear','wore','worn','abc','I *wore* a red jumper.','He has *worn* those shoes all week.'],
+['write','wrote','written','abc','She *wrote* a long email.','Have you *written* your essay?'],
+['wake','woke','woken','abc','I *woke* up at seven.','The noise has *woken* the baby.'],
+['hide','hid','hidden','abc','He *hid* behind the door.','Who has *hidden* my shoes?'],
+['shake','shook','shaken','abc','She *shook* his hand.','The news has *shaken* everyone.']
+];
+var RULES={
+  ed:'Just add -ed.',
+  d:'The verb already ends in -e, so add only -d.',
+  ied:'Consonant + y: change the y to i, then add -ed.',
+  yed:'Vowel + y: keep the y and add -ed.',
+  dbl:'One short vowel + one consonant (or stress on the last syllable): double the last consonant, then add -ed.',
+  nodbl:'The stress is not on the last syllable, so do not double the consonant. Just add -ed.'
+};
+// base, -ed form, rule, example
+var REG=[
+['walk','walked','ed','We *walked* to school.'],['play','played','yed','They *played* chess.'],
+['stop','stopped','dbl','The bus *stopped* outside.'],['study','studied','ied','She *studied* for hours.'],
+['like','liked','d','I *liked* the film.'],['plan','planned','dbl','We *planned* a surprise.'],
+['try','tried','ied','He *tried* again.'],['carry','carried','ied','She *carried* the box.'],
+['hop','hopped','dbl','The rabbit *hopped* away.'],['dance','danced','d','They *danced* all night.'],
+['cry','cried','ied','The baby *cried*.'],['enjoy','enjoyed','yed','We *enjoyed* the trip.'],
+['prefer','preferred','dbl','I *preferred* the blue one.'],['visit','visited','nodbl','We *visited* Granada.'],
+['open','opened','nodbl','He *opened* the window.'],['admit','admitted','dbl','She *admitted* her mistake.'],
+['decide','decided','d','I *decided* to stay.'],['watch','watched','ed','We *watched* a film.'],
+['stay','stayed','yed','They *stayed* at home.'],['copy','copied','ied','He *copied* the notes.'],
+['fix','fixed','ed','Dad *fixed* my bike.'],['drop','dropped','dbl','I *dropped* my phone.'],
+['bake','baked','d','Mum *baked* a cake.'],['apply','applied','ied','She *applied* for a job.'],
+['happen','happened','nodbl','What *happened*?'],['listen','listened','nodbl','I *listened* carefully.'],
+['jog','jogged','dbl','He *jogged* in the park.'],['hug','hugged','dbl','She *hugged* her friend.'],
+['invite','invited','d','We *invited* everyone.'],['help','helped','ed','He *helped* me.']
+];
+// correct answer FIRST (shuffled when played), sentence, timeline kind, explanation
+var TM=[
+['I ___ my homework yesterday evening.',['finished','have finished','had finished'],'simple','Yesterday evening is a finished time, so we use the past simple.'],
+['She ___ in Barcelona since 2020.',['has lived','lived','had lived'],'presperf','Since 2020 links the past to now, so we use the present perfect.'],
+['When we got to the cinema, the film ___ .',['had started','started','has started'],'pperf','The film started first, then we arrived. The earlier action takes the past perfect.'],
+['I ___ sushi, so I\'m not sure I\'ll like it.',['have never eaten','never ate','had never eaten'],'presperf','This is life experience up to now, so we use the present perfect.'],
+['By the time Ben got to the station, the train ___ .',['had left','left','has left'],'pperf','"By the time" shows one action finished before another past moment: past perfect.'],
+['We ___ to Paris last summer.',['went','have been','had gone'],'simple','Last summer is a finished time: past simple.'],
+['Oh no! Someone ___ my bike!',['has stolen','had stolen','was stealing'],'presperf','This is fresh news with a result now (the bike is gone). Use the present perfect.'],
+['Mum was angry because I ___ her birthday cake.',['had eaten','have eaten','eat'],'pperf','I ate the cake first, then Mum got angry. The earlier action is in the past perfect.'],
+['___ you ever seen a whale?',['Have','Had','Were'],'presperf','"Ever" asks about life experience up to now: Have you ever...?'],
+['I can\'t open the door. I ___ my keys.',['have lost','had lost','lose'],'presperf','The past action has a result now (no keys), so we use the present perfect.'],
+['Shakespeare ___ many famous plays.',['wrote','has written','had written'],'simple','His writing time is finished and he is no longer alive: past simple.'],
+['By the time the teacher arrived, we ___ the experiment.',['had finished','finished','have finished'],'pperf','We finished before the teacher arrived. First action: past perfect.'],
+['I ___ my arm last year.',['broke','have broken','had broken'],'simple','Last year is a finished time: past simple.'],
+['She is tired because she ___ ten kilometres so far today.',['has run','ran','had run'],'presperf','"So far today" means today is not over yet, so we use the present perfect.'],
+['After he ___ dinner, he watched TV.',['had eaten','has eaten','eats'],'pperf','Eating dinner came first, watching TV came second: past perfect, then past simple.'],
+['I ___ him since last Monday.',['haven\'t seen','didn\'t see','hadn\'t seen'],'presperf','"Since" starts a period that continues until now: present perfect.'],
+['When I phoned Anna at six, she ___ home.',['had already left','has already left','already leaves'],'pperf','She left before six. The earlier past action takes the past perfect.'],
+['Last week, my cousin ___ me a present.',['gave','has given','had given'],'simple','Last week is a finished time: past simple.'],
+['I couldn\'t get in because I ___ my ticket at home.',['had left','have left','leave'],'pperf','Leaving the ticket happened before I tried to get in: past perfect.'],
+['This is the best book I ___ .',['have ever read','ever read','had ever read'],'presperf','After a superlative we talk about experience up to now: present perfect.'],
+['They ___ the room before the guests arrived.',['had cleaned','have cleaned','cleaning'],'pperf','Cleaning happened before the guests arrived: past perfect.'],
+['My sister ___ to Japan three times. She knows it well.',['has been','has gone','is going'],'presperf','"Has been" means she visited and came back. "Has gone" means she is still there.'],
+['I ___ in London for two years, but now I live in Madrid.',['lived','have lived','had lived'],'simple','The London period is finished and has no link to now: past simple.'],
+['He failed the exam because he ___ at all.',['hadn\'t studied','hasn\'t studied','doesn\'t study'],'pperf','Not studying came before the exam, and caused the result: past perfect.'],
+['___ you finished your homework yet?',['Have','Had','Were'],'presperf','"Yet" goes with the present perfect: Have you finished...yet?'],
+['She told me that she ___ the book before.',['had read','has read','reads'],'pperf','Reported speech moves the tense back: has read becomes had read.'],
+['We ___ each other for ten years. We\'re best friends.',['have known','knew','had known'],'presperf','"For ten years" and "we are friends now" show a period up to now: present perfect.'],
+['In 1969, humans first ___ on the Moon.',['landed','have landed','had landed'],'simple','1969 is a finished time: past simple.'],
+['I\'m so happy! I ___ my driving test!',['have passed','had passed','pass'],'presperf','Good news with a result now: present perfect.'],
+['We were hungry because we ___ anything all day.',['hadn\'t eaten','haven\'t eaten','don\'t eat'],'pperf','Not eating came before the moment we were hungry: past perfect.'],
+['Wow, you ___ so much since last year!',['have grown','grew','had grown'],'presperf','"Since last year" runs up to now: present perfect.'],
+['He ___ the door and walked in.',['opened','has opened','had opened'],'simple','Two actions in order in a story: both use the past simple.'],
+['I ___ this song a hundred times. I love it!',['have heard','heard','had heard'],'presperf','We count experiences up to now: present perfect.'],
+['Yesterday I ___ Maria at the park.',['met','have met','had met'],'simple','Yesterday is a finished time: past simple.']
+];
+// chunks, wrong chunk index, replacement for that chunk, explanation
+var HUNT=[
+[['Yesterday I','have seen','a great film','with my cousin.'],1,'saw','Yesterday is a finished time, so use the past simple: saw.'],
+[['She','lived','in Madrid','since 2015.'],1,'has lived','Since 2015 links the past to now, so use the present perfect: has lived.'],
+[['He goed','to school','by bus','yesterday.'],0,'He went','Go is irregular: go, went, gone.'],
+[['I','buyed','a new bag','last week.'],1,'bought','Buy is irregular: buy, bought, bought.'],
+[['When I arrived,','the party','has already started.'],2,'had already started.','The party started before I arrived, so use the past perfect: had already started.'],
+[['We','have visited','the museum','last Sunday.'],1,'visited','Last Sunday is a finished time, so use the past simple.'],
+[['She said','she has never','eaten paella','before.'],1,'she had never','After "said" the tense moves back: she had never eaten.'],
+[['Have you','ever','saw','a ghost?'],2,'seen','After have we need the past participle: seen.'],
+[['I','didn\'t went','to the park','yesterday.'],1,'didn\'t go','After didn\'t we use the base verb: didn\'t go.'],
+[['After she','had finish','her homework,','she played games.'],1,'had finished','Past perfect = had + past participle: had finished.'],
+[['My brother','has broke','his leg','twice.'],1,'has broken','The present perfect needs the past participle: has broken.'],
+[['Did you','finished','your project','yesterday?'],1,'finish','After did we use the base verb: Did you finish...?'],
+[['He','has lost','his wallet','last night.'],1,'lost','Last night is a finished time: use the past simple.'],
+[['I','have know','her','since 2019.'],1,'have known','Know, knew, known: I have known her.'],
+[['The film','already had started','when we','got there.'],1,'had already started','Word order: had + already + past participle.'],
+[['She','has been','in Rome','yesterday.'],1,'was','Yesterday needs the past simple: she was in Rome.'],
+[['We','stoped','at the shop','on the way home.'],1,'stopped','One short vowel + one consonant: double the p. Stopped.'],
+[['He','studyed','hard','for the test.'],1,'studied','Consonant + y: change y to i and add -ed. Studied.'],
+[['I','had never see','snow','before that day.'],1,'had never seen','Past perfect needs the past participle: had never seen.'],
+[['They','have arrived','at the hotel','two hours ago.'],1,'arrived','"Ago" needs the past simple: they arrived two hours ago.']
+];
+var SOUND_LISTS=[
+['walked','jumped','washed','laughed','kissed','watched','helped','stopped','asked','fixed','danced','looked','missed','pushed','cooked'],
+['played','called','opened','cleaned','lived','loved','stayed','tried','enjoyed','rained','listened','closed','answered','arrived','smiled'],
+['wanted','needed','visited','decided','waited','started','painted','ended','invited','collected','hated','planted','shouted','added','tested']
+];
+var SOUND_OPT=['/t/ as in walked','/d/ as in played','/ɪd/ as in wanted (extra syllable)'];
+var SOUND_WHY=[
+  'The verb ends in a voiceless sound (p, k, f, s, sh, ch), so -ed sounds like /t/.',
+  'The verb ends in a voiced sound or a vowel, so -ed sounds like /d/.',
+  'The verb ends in /t/ or /d/, so we add a whole extra syllable: /ɪd/.'
+];
+
+/* ---------- PROGRESS ---------- */
+var LEVELS=[[0,'Time Tourist'],[120,'Verb Explorer'],[300,'Tense Traveller'],[550,'Timeline Ranger'],[850,'Past Perfect Pilot'],[1250,'Time Master']];
+function lvl(){var k=0;LEVELS.forEach(function(l,i){if(S.xp>=l[0])k=i;});return k;}
+function addXP(n){var before=lvl();S.xp+=n;save();var after=lvl();renderTop();if(after>before)toast('Level up! You are now a '+LEVELS[after][1]+'.');}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(function(){t.classList.remove('on');},3200);}
+function renderTop(){
+  if(!S){$('#top').innerHTML='<div class="topin"><button class="brand" data-act="home">Tense Traveller</button></div>';return;}
+  var L=lvl(),lo=LEVELS[L][0],nxt=LEVELS[L+1];
+  var pct=nxt?Math.round((S.xp-lo)/(nxt[0]-lo)*100):100;
+  $('#top').innerHTML='<div class="topin"><button class="brand" data-act="home">Tense Traveller</button><div class="lv"><div class="lvl"><b>'+LEVELS[L][1]+'</b><span>'+S.xp+' XP'+(nxt?' / '+nxt[0]:'')+'</span></div><div class="bar"><i style="width:'+pct+'%"></i></div></div></div>';
+}
+function starsHTML(n){var s='';for(var i=0;i<3;i++)s+=i<n?'★':'<span class="off">★</span>';return '<span class="stars" aria-label="'+n+' of 3 stars">'+s+'</span>';}
+
+/* ---------- TIMELINE ---------- */
+function timeline(k){
+  var P='var(--pperf)',Si='var(--psimple)',Pr='var(--prperf)';
+  var base='<line class="tl-axis" x1="8" y1="40" x2="304" y2="40"/><path class="tl-arrow" d="M298 33l8 7-8 7"/><line class="tl-now" x1="268" y1="22" x2="268" y2="58"/><text class="tl-t now" x="268" y="72" text-anchor="middle">NOW</text>';
+  var m='',alt='';
+  if(k==='pperf'){
+    alt='Timeline: the first action (past perfect) happens before the second past action, and both are before now.';
+    m='<path d="M72 40H148" stroke="'+P+'" stroke-width="3" stroke-dasharray="1 6" stroke-linecap="round"/>'+
+      '<circle cx="64" cy="40" r="9" fill="'+P+'"/><circle cx="156" cy="40" r="9" fill="'+Si+'"/>'+
+      '<text class="tl-t" style="fill:'+P+'" x="64" y="18" text-anchor="middle">had + pp</text>'+
+      '<text class="tl-t" x="64" y="68" text-anchor="middle">happened first</text>'+
+      '<text class="tl-t" style="fill:'+Si+'" x="156" y="18" text-anchor="middle">past simple</text>'+
+      '<text class="tl-t" x="170" y="68" text-anchor="middle">happened second</text>';
+  }else if(k==='simple'){
+    alt='Timeline: one finished moment in the past, with no link to now.';
+    m='<circle cx="140" cy="40" r="9" fill="'+Si+'"/>'+
+      '<text class="tl-t" style="fill:'+Si+'" x="140" y="18" text-anchor="middle">past simple</text>'+
+      '<text class="tl-t" x="140" y="68" text-anchor="middle">finished and over</text>';
+  }else{
+    alt='Timeline: an action or state in the past that stays connected to now.';
+    m='<line x1="90" y1="40" x2="268" y2="40" stroke="'+Pr+'" stroke-width="8" stroke-linecap="round"/>'+
+      '<circle cx="90" cy="40" r="9" fill="'+Pr+'"/><circle cx="268" cy="40" r="9" fill="'+Pr+'"/>'+
+      '<text class="tl-t" style="fill:'+Pr+'" x="179" y="22" text-anchor="middle">have/has + pp</text>'+
+      '<text class="tl-t" x="105" y="68" text-anchor="middle">starts in the past</text>'+
+      '<text class="tl-t" x="190" y="68" text-anchor="middle">still linked to now</text>';
+  }
+  return '<figure class="tlf"><svg viewBox="0 0 320 78" role="img" aria-label="'+alt+'">'+base+m+'</svg></figure>';
+}
+
+/* ---------- NAVIGATION ---------- */
+var R=null,F=null;
+function back(){return '<button class="link" data-act="home">← Home</button>';}
+function go(v,a){
+  R=null;if(F)F.active=false;
+  window.scrollTo(0,0);
+  if(!S&&v!=='login')v='login';
+  ({login:viewLogin,code:viewCode,home:viewHome,vault:viewVault,duel:viewDuel,guide:viewGuide})[v](a);
+  renderTop();
+}
+
+/* ---------- LOGIN ---------- */
+function viewLogin(){
+  var names=Object.keys(ALL.profiles).sort(function(a,b){return a===ALL.last?-1:b===ALL.last?1:0;});
+  var list=names.length?'<div class="grid">'+names.map(function(n){var p=ALL.profiles[n];var L=0;LEVELS.forEach(function(l,i){if(p.xp>=l[0])L=i;});
+    return '<button class="card" style="--c:var(--psimple)" data-act="loginAs" data-name="'+esc(n)+'"><b>'+esc(n)+'</b><span>'+LEVELS[L][1]+'</span><div class="meta"><span>'+p.xp+' XP</span><span>'+(n===ALL.last?'Last played':'')+'</span></div></button>';}).join('')+'</div>':'<p class="lead">No players on this device yet. Create one below.</p>';
+  app.innerHTML='<h1 class="h1">Who is playing?</h1><p class="lead">Pick your player to keep your points. Use a nickname, not your full name.</p>'+list+
+   '<section class="sec" style="--c:var(--prperf)"><h2>New player</h2><form id="nf" autocomplete="off"><div class="fields"><label class="field">Nickname<input id="nn" type="text" maxlength="20" placeholder="For example: SpaceFox"></label></div><button class="btn" type="submit">Start playing</button></form></section>'+
+   '<section class="sec" style="--c:var(--pperf)"><h2>I have a save code</h2><p>Playing on a new device or browser? Paste your save code to bring your points with you.</p><div class="fields"><label class="field">Save code<input id="ic" type="text" placeholder="TT1-..."></label></div><button class="btn alt" data-act="import">Load my points</button></section>';
+}
+function viewCode(){
+  var c=makeCode();
+  app.innerHTML=back()+'<h1 class="h1">Save code</h1><p class="lead">This code holds all of <b>'+esc(S.name)+'</b>\'s points. Copy it somewhere safe, such as a note or a message to yourself. On another device, choose <i>I have a save code</i> and paste it.</p><label class="field">Your code<input id="sc" type="text" readonly value="'+c+'"></label><div class="actions"><button class="btn" data-act="copycode">Copy code</button><button class="btn alt" data-act="home">Back</button></div>';
+}
+
+/* ---------- HOME ---------- */
+function viewHome(){
+  var mastered=Object.keys(S.cards).filter(function(k){return S.cards[k]>=3;}).length;
+  var total=IRR.length+REG.length;
+  var modes=[
+    {id:'vault',n:'Verb Vault',d:'Flip flashcards. Say the forms, then check yourself.',c:'--pperf',m:mastered+' / '+total+' mastered'},
+    {id:'duel',n:'Verb Duel',d:'Type the past simple and past participle from memory.',c:'--psimple',b:1},
+    {id:'time',n:'Time Machine',d:'Pick the right tense. A timeline shows you why.',c:'--prperf',b:1},
+    {id:'hunt',n:'Error Hunter',d:'Tap the mistake hiding in each sentence.',c:'--pperf',b:1},
+    {id:'sound',n:'Sound Lab',d:'Is -ed a /t/, a /d/ or a /ɪd/? Train your ear.',c:'--psimple',b:1},
+    {id:'boss',n:'Time Master Challenge',d:'14 mixed questions from every game. Earn bonus XP.',c:'--gold',b:1},
+    {id:'guide',n:'Tense Map',d:'Rules, signal words and timelines in one place.',c:'--prperf',m:'Read before you play'}
+  ];
+  var name=S.name?esc(S.name):'';
+  app.innerHTML=
+   '<h1 class="h1">'+'Welcome back, '+name+'.'+'</h1>'+
+   '<p class="lead">Collect XP, level up and become an expert in irregular verbs, regular verbs, the present perfect and the past perfect.</p>'+
+   '<div class="namerow"><span>Playing as <b>'+name+'</b></span><button class="btn alt sm" data-act="login">Switch player</button><button class="btn alt sm" data-act="code">Save code</button></div>'+
+   '<div class="strip">'+
+    '<div class="zone pp"><small>Before that</small><b>Past perfect</b><code>had + pp</code><em>She had left.</em></div>'+
+    '<div class="zone ps"><small>Then</small><b>Past simple</b><code>-ed or 2nd form</code><em>She left.</em></div>'+
+    '<div class="zone pr"><small>Up to now</small><b>Present perfect</b><code>have/has + pp</code><em>She has left.</em></div>'+
+   '</div><div class="axis" aria-hidden="true"><span>NOW</span></div>'+
+   '<div class="grid">'+modes.map(function(m){
+      return '<button class="card" style="--c:var('+m.c+')" data-act="'+(m.id==='vault'||m.id==='duel'||m.id==='guide'?'go':'play')+'" data-mode="'+m.id+'"><b>'+m.n+'</b><span>'+m.d+'</span><div class="meta">'+(m.b?starsHTML(S.best[m.id]||0):'<span></span>')+'<span>'+(m.m||'')+'</span></div></button>';
+   }).join('')+'</div>';
+}
+
+/* ---------- GUIDE ---------- */
+function viewGuide(){
+  app.innerHTML=back()+'<h1 class="h1">Tense Map</h1><p class="lead">Three tenses, three jobs. Use the colours to remember them: purple for earlier, blue for finished, orange for connected to now.</p>'+
+  '<section class="sec" style="--c:var(--psimple)"><h2>Past simple</h2><p>A finished action at a finished time.</p><p><code>verb + -ed</code> or the 2nd form of an irregular verb. Questions and negatives: <code>did / didn\'t + base verb</code>.</p><p><span class="pill">yesterday</span><span class="pill">last week</span><span class="pill">in 2019</span><span class="pill">two days ago</span><span class="pill">when I was ten</span></p><p>We <b>watched</b> a film last night.</p>'+timeline('simple')+'</section>'+
+  '<section class="sec" style="--c:var(--prperf)"><h2>Present perfect</h2><p>A past action or state that is connected to now: experience, a result you can see, or something that is still true.</p><p><code>have / has + past participle</code></p><p><span class="pill">ever</span><span class="pill">never</span><span class="pill">already</span><span class="pill">yet</span><span class="pill">just</span><span class="pill">since</span><span class="pill">for</span><span class="pill">so far</span><span class="pill">today / this week</span></p><p>I <b>have lost</b> my keys. (I still do not have them.)</p><p>Careful: she <b>has been</b> to Rome (she came back). She <b>has gone</b> to Rome (she is still there).</p>'+timeline('presperf')+'</section>'+
+  '<section class="sec" style="--c:var(--pperf)"><h2>Past perfect</h2><p>The earlier of two past actions. It is the "before then" tense.</p><p><code>had + past participle</code></p><p><span class="pill">by the time</span><span class="pill">before</span><span class="pill">after</span><span class="pill">already</span><span class="pill">because</span><span class="pill">she said that...</span></p><p>When I arrived, the film <b>had started</b>.</p>'+timeline('pperf')+'</section>'+
+  '<section class="sec" style="--c:var(--pperf)"><h2>Irregular verb families</h2><table class="mini"><tbody>'+Object.keys(FAMILIES).map(function(k){var ex=IRR.filter(function(v){return v[3]===k;}).slice(0,6).map(function(v){return v[0];}).join(', ');return '<tr><th>'+FAMILIES[k].t+'</th><td>'+FAMILIES[k].d+'<br><span class="note">'+ex+'...</span></td></tr>';}).join('')+'</tbody></table></section>'+
+  '<section class="sec" style="--c:var(--psimple)"><h2>Regular verbs: spelling and sound</h2><ul>'+Object.keys(RULES).map(function(k){return '<li>'+RULES[k]+'</li>';}).join('')+'</ul><p><b>Sounds:</b> /t/ after p, k, f, s, sh, ch (walked). /d/ after other sounds (played). /ɪd/ after t or d (wanted).</p></section>';
+}
+
+/* ---------- FLASHCARDS ---------- */
+function cardsFor(id){
+  if(id==='reg')return REG.map(function(v){return {id:v[0],t:'reg',v:v};});
+  var list=id==='all'?IRR:IRR.filter(function(v){return v[3]===id;});
+  return list.map(function(v){return {id:v[0],t:'irr',v:v};});
+}
+function viewVault(){
+  var decks=[['all','Every irregular verb','All '+IRR.length+' irregular verbs']].concat(Object.keys(FAMILIES).map(function(k){return [k,FAMILIES[k].t,FAMILIES[k].d];})).concat([['reg','Regular verbs','Spelling rules for -ed']]);
+  app.innerHTML=back()+'<h1 class="h1">Verb Vault</h1><p class="lead">Pick a deck. Each session has up to 12 cards. Cards you miss come back sooner. Get a card right three times to master it.</p><div class="grid">'+
+  decks.map(function(d){var cs=cardsFor(d[0]);var m=cs.filter(function(c){return (S.cards[c.id]||0)>=3;}).length;
+    return '<button class="card" style="--c:var(--pperf)" data-act="deck" data-deck="'+d[0]+'"><b>'+d[1]+'</b><span>'+d[2]+'</span><div class="bar" style="margin-top:8px"><i style="width:'+Math.round(m/cs.length*100)+'%"></i></div><div class="meta"><span>'+m+' / '+cs.length+' mastered</span></div></button>';}).join('')+'</div>';
+}
+function startDeck(id){
+  var pool=cardsFor(id);
+  var q=shuffle(pool).sort(function(a,b){return (S.cards[a.id]||0)-(S.cards[b.id]||0);}).slice(0,12);
+  F={deck:id,q:q,i:0,flipped:false,got:0,again:0,active:true,re:{}};
+  renderCard();
+}
+function renderCard(){
+  if(F.i>=F.q.length){return endDeck();}
+  var c=F.q[F.i],v=c.v,body;
+  var pct=Math.round(F.i/F.q.length*100);
+  var hud='<div class="hud"><button class="link" data-act="vault">← Decks</button><div class="prog"><span style="width:'+pct+'%"></span></div><div>'+(F.i+1)+'/'+F.q.length+'</div></div>';
+  if(!F.flipped){
+    body='<div class="fc"><small>'+(c.t==='reg'?'Regular verb':'Irregular verb')+'</small><div class="fcv">'+v[0]+'</div><p>'+(c.t==='reg'?'Say the past simple and spell it. Then flip.':'Say the past simple and past participle. Then flip.')+'</p></div><div class="ctl"><button class="btn" data-act="flip">Flip card <span style="opacity:.7">(Space)</span></button></div>';
+  }else if(c.t==='reg'){
+    body='<div class="fc"><small>Regular verb</small><div class="cols two"><div><small>Base</small><b>'+v[0]+'</b></div><div><small>Past simple</small><b>'+v[1]+'</b></div></div><div class="fcx"><p><b>Rule:</b> '+RULES[v[2]]+'</p><p>'+fmt(v[3])+'</p></div>'+hearBtn(v[0]+'. '+v[1]+'.')+'</div>';
+  }else{
+    body='<div class="fc"><small>Irregular verb</small><div class="cols"><div><small>Base</small><b>'+v[0]+'</b></div><div><small>Past simple</small><b>'+v[1]+'</b></div><div><small>Past participle</small><b>'+v[2]+'</b></div></div><div class="fcx"><p>'+fmt(v[4])+'</p><p>'+fmt(v[5])+'</p>'+(v[6]?'<p class="note">'+v[6]+'</p>':'')+'</div>'+hearBtn(v[0]+'. '+v[1]+'. '+v[2]+'.')+'</div>';
+  }
+  if(F.flipped)body+='<div class="ctl"><button class="btn again" data-act="again">Again (←)</button><button class="btn got" data-act="got">Got it (→)</button></div>';
+  app.innerHTML=hud+body;
+}
+function endDeck(){
+  F.active=false;
+  app.innerHTML='<h1 class="h1">Session complete</h1><div class="score"><div class="big">'+F.got+'</div><div><b>cards you knew</b><br><span class="note">'+F.again+' to see again soon</span></div></div><div class="actions"><button class="btn" data-act="deck" data-deck="'+F.deck+'">Another session</button><button class="btn alt" data-act="vault">Choose a deck</button><button class="btn alt" data-act="home">Home</button></div>';
+}
+
+/* ---------- QUESTION BUILDERS ---------- */
+function qIrr(v){
+  return {kind:'type',tag:'duel',tagLabel:'Verb Duel',prompt:'Type the past forms of',big:v[0],
+    fields:[{label:'Past simple',ans:v[1]},{label:'Past participle',ans:v[2]}],
+    why:'<div class="forms">'+v[0]+' → '+v[1]+' → '+v[2]+'</div><p class="ex">'+fmt(v[4])+'<br>'+fmt(v[5])+'</p>'+(v[6]?'<p class="note">'+v[6]+'</p>':''),
+    say:v[0]+'. '+v[1]+'. '+v[2]+'.',review:v[0]+' – '+v[1]+' – '+v[2]};
+}
+function qReg(v){
+  return {kind:'type',tag:'duel',tagLabel:'Regular -ed spelling',prompt:'Type the past simple of',big:v[0],
+    fields:[{label:'Past simple (-ed)',ans:v[1]}],
+    why:'<div class="forms">'+v[0]+' → '+v[1]+'</div><p>'+RULES[v[2]]+'</p><p class="ex">'+fmt(v[3])+'</p>',
+    say:v[0]+'. '+v[1]+'.',review:v[0]+' – '+v[1]};
+}
+function qTM(t){
+  var opts=shuffle(t[1].map(function(o,i){return {o:o,c:i===0};}));
+  return {kind:'choice',tag:'time',tagLabel:'Time Machine',
+    prompt:'Choose the best answer.<br><span class="sent">'+esc(t[0]).replace('___','<span class="gap"></span>')+'</span>',
+    options:opts.map(function(x){return esc(x.o);}),ans:opts.findIndex(function(x){return x.c;}),
+    why:'<p>'+t[3]+'</p>',tl:t[2],say:t[0].replace('___',t[1][0]),review:esc(t[0]).replace('___','<b>'+esc(t[1][0])+'</b>')};
+}
+function qHunt(h){
+  var fixed=h[0].map(function(c,i){return i===h[1]?h[2]:c;}).join(' ');
+  return {kind:'chunks',tag:'hunt',tagLabel:'Error Hunter',prompt:'One part of this sentence has a mistake. Tap it.',
+    options:h[0],ans:h[1],
+    why:'<p>Better: <b>'+esc(fixed)+'</b></p><p>'+h[3]+'</p>',say:fixed,review:esc(fixed)};
+}
+function qSound(w){
+  return {kind:'choice',tag:'sound',tagLabel:'Sound Lab',prompt:'How do you say the ending of',big:w[0],
+    options:SOUND_OPT,ans:w[1],why:'<p><b>'+w[0]+'</b>: '+SOUND_WHY[w[1]]+'</p>',say:w[0],review:w[0]+' '+['/t/','/d/','/ɪd/'][w[1]]};
+}
+function soundPool(){var a=[];SOUND_LISTS.forEach(function(l,i){l.forEach(function(w){a.push([w,i]);});});return a;}
+function build(mode,set){
+  if(mode==='duel'){
+    if(set==='reg')return pick(REG,10).map(qReg);
+    var pool=set==='mix'?IRR:IRR.filter(function(v){return set==='abc'?(v[3]==='abc'||v[3]==='aba'):v[3]===set;});
+    return pick(pool,10).map(qIrr);
+  }
+  if(mode==='time')return pick(TM,10).map(qTM);
+  if(mode==='hunt')return pick(HUNT,10).map(qHunt);
+  if(mode==='sound')return pick(soundPool(),12).map(qSound);
+  return shuffle([].concat(pick(TM,5).map(qTM),pick(HUNT,4).map(qHunt),pick(IRR.filter(function(v){return v[3]==='abc'||v[3]==='abb';}),3).map(qIrr),pick(soundPool(),2).map(qSound)));
+}
+var COLORS={duel:'--psimple',time:'--prperf',hunt:'--pperf',sound:'--psimple',boss:'--accent'};
+var PRAISE=['Spot on!','Brilliant!','Yes!','Perfect!','Nice one!','You got it!'];
+var OOPS=['Not quite.','Close. Check this.','Good try.','Almost.'];
+
+/* ---------- QUIZ ENGINE ---------- */
+function viewDuel(){
+  var sets=[['mix','Mixed irregulars','Every irregular verb'],['aaa',FAMILIES.aaa.t,FAMILIES.aaa.d],['abb',FAMILIES.abb.t,FAMILIES.abb.d],['abc','All different','go, went, gone and run, ran, run'],['reg','Regular -ed spelling','double letters, y to ied and more']];
+  app.innerHTML=back()+'<h1 class="h1">Verb Duel</h1><p class="lead">Choose a set. You get 10 verbs. Type the forms and press Enter. Where a verb has two answers, either one counts.</p><div class="grid">'+
+   sets.map(function(s){return '<button class="card" style="--c:var(--psimple)" data-act="play" data-mode="duel" data-set="'+s[0]+'"><b>'+s[1]+'</b><span>'+s[2]+'</span></button>';}).join('')+'</div>';
+}
+function startRound(mode,set){
+  R={mode:mode,set:set||'',qs:build(mode,set),i:0,score:0,streak:0,wrong:[],xp:0,answered:false,active:true};
+  renderQ();
+}
+function renderQ(){
+  var q=R.qs[R.i],body='';R.answered=false;
+  var c=COLORS[q.tag==='duel'?'duel':q.tag==='time'?'time':q.tag==='hunt'?'hunt':'sound'];
+  if(q.kind==='choice'){
+    body='<div class="opts">'+q.options.map(function(o,i){return '<button class="opt" data-act="opt" data-i="'+i+'"><kbd>'+(i+1)+'</kbd><span>'+o+'</span></button>';}).join('')+'</div>';
+  }else if(q.kind==='chunks'){
+    body='<div class="sentence">'+q.options.map(function(o,i){return '<button class="chunk" data-act="opt" data-i="'+i+'">'+esc(o)+'</button>';}).join('')+'</div>';
+  }else{
+    body='<form id="tf" autocomplete="off"><div class="fields">'+q.fields.map(function(f,i){return '<label class="field">'+f.label+'<input id="f'+i+'" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="'+f.label+'"></label>';}).join('')+'</div><button class="btn" type="submit">Check</button></form>';
+  }
+  app.innerHTML='<div class="hud"><button class="link" data-act="home">Quit</button><div class="prog"><span style="width:'+Math.round(R.i/R.qs.length*100)+'%"></span></div><div>'+(R.i+1)+'/'+R.qs.length+'</div><div class="streak" id="stk">Streak '+R.streak+'</div></div>'+
+   '<div class="qcard" style="--c:var('+c+')"><div class="qtag">'+q.tagLabel+'</div><div class="prompt">'+q.prompt+'</div>'+(q.big?'<div class="bigverb">'+q.big+'</div>':'')+body+'</div><div id="fb" aria-live="polite"></div>';
+  if(q.kind==='type'){$('#f0').focus();}
+}
+function norm(s){return s.toLowerCase().replace(/[‘’]/g,"'").trim();}
+function matches(val,ans){var v=norm(val);if(!v)return false;return norm(ans).split('/').concat([norm(ans)]).indexOf(v)>-1;}
+function answerChoice(i){
+  var q=R.qs[R.i];if(R.answered)return;R.answered=true;
+  var ok=i===q.ans;
+  var els=app.querySelectorAll('.opt,.chunk');
+  Array.prototype.forEach.call(els,function(b,k){b.disabled=true;if(k===q.ans)b.classList.add('good');else if(k===i)b.classList.add('bad');});
+  finish(ok,q);
+}
+function answerType(){
+  var q=R.qs[R.i];if(R.answered)return;
+  var allOk=true,empty=false;
+  q.fields.forEach(function(f,i){var inp=$('#f'+i);if(!inp.value.trim())empty=true;});
+  if(empty){toast('Fill in every box first.');return;}
+  R.answered=true;
+  q.fields.forEach(function(f,i){var inp=$('#f'+i);var ok=matches(inp.value,f.ans);if(!ok)allOk=false;inp.classList.add(ok?'good':'bad');inp.disabled=true;});
+  var sb=$('#tf .btn');if(sb)sb.style.display='none';
+  finish(allOk,q);
+}
+function finish(ok,q){
+  var gain=0;
+  if(ok){gain=10+Math.min(R.streak,4)*2;R.score++;R.streak++;R.xp+=gain;addXP(gain);}
+  else{R.streak=0;R.wrong.push(q);}
+  var s=$('#stk');if(s)s.textContent='Streak '+R.streak;
+  var last=R.i+1>=R.qs.length;
+  $('#fb').innerHTML='<div class="fb '+(ok?'good':'bad')+'"><div class="fbh"><strong>'+rnd(ok?PRAISE:OOPS)+'</strong>'+(ok?'<span class="xp">+'+gain+' XP</span>':'')+'</div><div class="why">'+q.why+'</div>'+(q.tl?timeline(q.tl):'')+'<div class="fbrow">'+hearBtn(q.say)+'<button class="btn" id="nx" data-act="next">'+(last?'See results':'Next')+'</button></div></div>';
+  var nx=$('#nx');if(nx){nx.focus({preventScroll:false});}
+}
+function results(){
+  var n=R.qs.length,r=R.score/n,stars=r>=.9?3:r>=.7?2:r>=.5?1:0;
+  var bonus=0;
+  if(stars===3){bonus=R.mode==='boss'?50:25;addXP(bonus);}
+  S.best[R.mode]=Math.max(S.best[R.mode]||0,stars);save();
+  var msg=['Every expert starts somewhere. Check the list below and try again.','Good start. Review the list and play once more.','Great work. Nearly there!','Perfect round. You are a past-tense pro!'][stars];
+  var review=R.wrong.length?'<div class="review"><h3>Practise these</h3><ul>'+R.wrong.map(function(q){return '<li>'+q.review+'</li>';}).join('')+'</ul></div>':'';
+  app.innerHTML='<h1 class="h1">Round complete</h1><div class="score"><div class="big">'+R.score+'/'+n+'</div><div>'+starsHTML(stars).replace('class="stars"','class="stars lg"')+'<br><b>+'+(R.xp+bonus)+' XP</b>'+(bonus?' <span class="note">(includes '+bonus+' bonus)</span>':'')+'</div></div><p class="lead">'+msg+'</p>'+review+
+   '<div class="actions"><button class="btn" data-act="again2">Play again</button><button class="btn alt" data-act="home">Home</button></div>';
+  R.active=false;
+}
+
+/* ---------- EVENTS ---------- */
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;
+  var a=t.dataset.act;
+  if(a==='home')go('home');
+  else if(a==='go')go(t.dataset.mode);
+  else if(a==='vault')go('vault');
+  else if(a==='play')startRound(t.dataset.mode,t.dataset.set);
+  else if(a==='deck')startDeck(t.dataset.deck);
+  else if(a==='flip'){F.flipped=true;renderCard();}
+  else if(a==='got'||a==='again'){cardDone(a==='got');}
+  else if(a==='opt')answerChoice(+t.dataset.i);
+  else if(a==='next'){R.i++;if(R.i>=R.qs.length)results();else{renderQ();window.scrollTo(0,0);}}
+  else if(a==='again2')startRound(R?R.mode:'time',R?R.set:'');
+  else if(a==='say')say(t.dataset.say);
+  else if(a==='login')go('login');
+  else if(a==='code')go('code');
+  else if(a==='loginAs')login(t.dataset.name);
+  else if(a==='import'){
+    var p=readCode(($('#ic')||{}).value);
+    if(!p){toast('That code does not look right. Copy the whole code and try again.');return;}
+    var old=ALL.profiles[p.name];
+    if(old){old.xp=Math.max(old.xp,p.xp);Object.keys(p.cards).forEach(function(k){old.cards[k]=Math.max(old.cards[k]||0,p.cards[k]);});Object.keys(p.best).forEach(function(k){old.best[k]=Math.max(old.best[k]||0,p.best[k]);});}
+    else ALL.profiles[p.name]=p;
+    toast('Welcome back, '+p.name+'! Points loaded.');login(p.name);
+  }
+  else if(a==='copycode'){
+    var f=$('#sc');f.select();
+    var done=function(){toast('Code copied.');};
+    try{navigator.clipboard.writeText(f.value).then(done,function(){document.execCommand('copy');done();});}catch(e){try{document.execCommand('copy');done();}catch(e2){toast('Select the code and copy it.');}}
+  }
+});
+app.addEventListener('submit',function(e){
+  if(e.target.id==='tf'){e.preventDefault();answerType();}
+  else if(e.target.id==='nf'){
+    e.preventDefault();
+    var n=$('#nn').value.replace(/[<>&"]/g,'').trim().slice(0,20);
+    if(n.length<2){toast('Choose a nickname with at least 2 letters.');return;}
+    var ex=Object.keys(ALL.profiles).filter(function(k){return k.toLowerCase()===n.toLowerCase();})[0];
+    if(ex){toast('That nickname already exists. Pick it from the list above.');return;}
+    ALL.profiles[n]=blank(n);login(n);
+  }
+});
+function cardDone(got){
+  var c=F.q[F.i];
+  if(got){S.cards[c.id]=Math.min(3,(S.cards[c.id]||0)+1);F.got++;addXP(3);}
+  else{S.cards[c.id]=0;F.again++;if(!F.re[c.id]){F.re[c.id]=1;F.q.push(c);}}
+  save();F.i++;F.flipped=false;renderCard();
+}
+document.addEventListener('keydown',function(e){
+  var tag=(e.target.tagName||'');
+  if(F&&F.active){
+    if(e.key===' '&&tag!=='BUTTON'&&!F.flipped){e.preventDefault();F.flipped=true;renderCard();}
+    else if(F.flipped&&e.key==='ArrowRight'){cardDone(true);}
+    else if(F.flipped&&e.key==='ArrowLeft'){cardDone(false);}
+    return;
+  }
+  if(R&&R.active&&!R.answered&&tag!=='INPUT'){
+    var q=R.qs[R.i];
+    if(q.kind!=='type'){var n=parseInt(e.key,10);if(n>=1&&n<=q.options.length){answerChoice(n-1);}}
+  }
+});
+
+/* ---------- START ---------- */
+(function(){
+  go('login');
+})();
+})();
+</script>
+</body>
+</html>
