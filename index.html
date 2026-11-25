@@ -152,6 +152,20 @@ mark.v{background:transparent;color:var(--accent);font-weight:800;border-bottom:
 .sec li{margin:3px 0}
 .mini{width:100%;border-collapse:collapse;font-size:15px}
 .mini td,.mini th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+select{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px 12px;max-width:100%}
+.chk{display:flex;align-items:center;gap:10px;font-weight:700;margin:10px 0 2px}
+.chk input{width:22px;height:22px;accent-color:var(--accent)}
+.roomcode{font:400 clamp(54px,16vw,96px)/1 var(--display);letter-spacing:.12em;color:var(--accent);background:var(--surface);border:3px dashed var(--line);border-radius:22px;text-align:center;padding:14px 8px 14px 20px;margin:10px 0 14px}
+.board{list-style:none;margin:12px 0;padding:0;display:grid;gap:8px}
+.brow{display:grid;grid-template-columns:34px minmax(0,1.3fr) minmax(50px,1fr) 44px;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--line);border-radius:14px;padding:10px 12px}
+.brow.me{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.bk{font:400 22px var(--display);text-align:center;color:var(--prperf)}
+.bn{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bn small{font-weight:700;color:var(--muted);font-size:12px;margin-left:4px}
+.bp{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bp i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.brow b{text-align:right;font-size:20px}
+.rkx{font-weight:800;color:var(--accent);white-space:nowrap}
 #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:99px;font-weight:800;opacity:0;pointer-events:none;transition:.3s;z-index:9;max-width:90vw;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -167,6 +181,7 @@ mark.v{background:transparent;color:var(--accent);font-weight:800;border-bottom:
 <header class="top" id="top"></header>
 <main id="app"></main>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -446,7 +461,8 @@ function go(v,a){
   R=null;if(F)F.active=false;
   window.scrollTo(0,0);
   if(!S&&v!=='login')v='login';
-  ({login:viewLogin,code:viewCode,home:viewHome,vault:viewVault,duel:viewDuel,guide:viewGuide})[v](a);
+  if(MP)mpLeave();
+  ({together:viewTogether,login:viewLogin,code:viewCode,home:viewHome,vault:viewVault,duel:viewDuel,guide:viewGuide})[v](a);
   renderTop();
 }
 
@@ -474,6 +490,7 @@ function viewHome(){
     {id:'time',n:'Time Machine',d:'Pick the right tense. A timeline shows you why.',c:'--prperf',b:1},
     {id:'hunt',n:'Error Hunter',d:'Tap the mistake hiding in each sentence.',c:'--pperf',b:1},
     {id:'sound',n:'Sound Lab',d:'Is -ed a /t/, a /d/ or a /ɪd/? Train your ear.',c:'--psimple',b:1},
+    {id:'together',n:'Play Together',d:'Race your class live. The teacher opens a room with a 4-letter code and can play too.',c:'--prperf',m:'Multiplayer'},
     {id:'boss',n:'Time Master Challenge',d:'14 mixed questions from every game. Earn bonus XP.',c:'--gold',b:1},
     {id:'guide',n:'Tense Map',d:'Rules, signal words and timelines in one place.',c:'--prperf',m:'Read before you play'}
   ];
@@ -488,7 +505,7 @@ function viewHome(){
     '<div class="zone pr"><small>Up to now</small><b>Present perfect</b><code>have/has + pp</code><em>She has left.</em></div>'+
    '</div><div class="axis" aria-hidden="true"><span>NOW</span></div>'+
    '<div class="grid">'+modes.map(function(m){
-      return '<button class="card" style="--c:var('+m.c+')" data-act="'+(m.id==='vault'||m.id==='duel'||m.id==='guide'?'go':'play')+'" data-mode="'+m.id+'"><b>'+m.n+'</b><span>'+m.d+'</span><div class="meta">'+(m.b?starsHTML(S.best[m.id]||0):'<span></span>')+'<span>'+(m.m||'')+'</span></div></button>';
+      return '<button class="card" style="--c:var('+m.c+')" data-act="'+(m.id==='vault'||m.id==='duel'||m.id==='guide'||m.id==='together'?'go':'play')+'" data-mode="'+m.id+'"><b>'+m.n+'</b><span>'+m.d+'</span><div class="meta">'+(m.b?starsHTML(S.best[m.id]||0):'<span></span>')+'<span>'+(m.m||'')+'</span></div></button>';
    }).join('')+'</div>';
 }
 
@@ -606,9 +623,10 @@ function renderQ(){
   }else{
     body='<form id="tf" autocomplete="off"><div class="fields">'+q.fields.map(function(f,i){return '<label class="field">'+f.label+'<input id="f'+i+'" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="'+f.label+'"></label>';}).join('')+'</div><button class="btn" type="submit">Check</button></form>';
   }
-  app.innerHTML='<div class="hud"><button class="link" data-act="home">Quit</button><div class="prog"><span style="width:'+Math.round(R.i/R.qs.length*100)+'%"></span></div><div>'+(R.i+1)+'/'+R.qs.length+'</div><div class="streak" id="stk">Streak '+R.streak+'</div></div>'+
+  app.innerHTML='<div class="hud"><button class="link" data-act="home">'+(R.multi?'Leave':'Quit')+'</button><div class="prog"><span style="width:'+Math.round(R.i/R.qs.length*100)+'%"></span></div><div>'+(R.i+1)+'/'+R.qs.length+'</div><div class="streak" id="stk">Streak '+R.streak+'</div>'+(R.multi?'<div class="rkx" id="rk"></div>':'')+'</div>'+
    '<div class="qcard" style="--c:var('+c+')"><div class="qtag">'+q.tagLabel+'</div><div class="prompt">'+q.prompt+'</div>'+(q.big?'<div class="bigverb">'+q.big+'</div>':'')+body+'</div><div id="fb" aria-live="polite"></div>';
   if(q.kind==='type'){$('#f0').focus();}
+  if(R.multi)updateRank();
 }
 function norm(s){return s.toLowerCase().replace(/[‘’]/g,"'").trim();}
 function matches(val,ans){var v=norm(val);if(!v)return false;return norm(ans).split('/').concat([norm(ans)]).indexOf(v)>-1;}
@@ -634,6 +652,7 @@ function finish(ok,q){
   if(ok){gain=10+Math.min(R.streak,4)*2;R.score++;R.streak++;R.xp+=gain;addXP(gain);}
   else{R.streak=0;R.wrong.push(q);}
   var s=$('#stk');if(s)s.textContent='Streak '+R.streak;
+  if(R.multi)mpProgress(false);
   var last=R.i+1>=R.qs.length;
   $('#fb').innerHTML='<div class="fb '+(ok?'good':'bad')+'"><div class="fbh"><strong>'+rnd(ok?PRAISE:OOPS)+'</strong>'+(ok?'<span class="xp">+'+gain+' XP</span>':'')+'</div><div class="why">'+q.why+'</div>'+(q.tl?timeline(q.tl):'')+'<div class="fbrow">'+hearBtn(q.say)+'<button class="btn" id="nx" data-act="next">'+(last?'See results':'Next')+'</button></div></div>';
   var nx=$('#nx');if(nx){nx.focus({preventScroll:false});}
@@ -650,6 +669,216 @@ function results(){
   R.active=false;
 }
 
+
+/* ---------- MULTIPLAYER (peer to peer, PeerJS) ---------- */
+var MP=null;
+var PFX='tensetraveller-',CODE_CH='BCDFGHJKLMNPQRSTVWXZ';
+function newCode(){var c='';for(var i=0;i<4;i++)c+=CODE_CH.charAt(Math.floor(Math.random()*CODE_CH.length));return c;}
+function peerOK(){return typeof window.Peer==='function';}
+function mpLeave(){
+  var m=MP;MP=null;if(!m)return;
+  clearTimeout(m.timer);
+  try{if(m.peer)m.peer.destroy();}catch(e){}
+}
+function myName(m){return m.role==='host'?S.name:m.myName;}
+function hostPlayer(){return {name:S.name,s:0,i:0,d:false,ms:0,host:true};}
+function nameTaken(m,nm){
+  var low=nm.toLowerCase();
+  if(low===S.name.toLowerCase())return true;
+  return Object.keys(m.players).some(function(id){return m.players[id].name.toLowerCase()===low;});
+}
+function rowsOf(m){
+  return Object.keys(m.players).map(function(id){var p=m.players[id];return {n:p.name,s:p.s,i:p.i,d:p.d,ms:p.ms,h:!!p.host,l:!!p.l};})
+   .sort(function(a,b){if(b.s!==a.s)return b.s-a.s;if(a.d!==b.d)return a.d?-1:1;if(a.d&&b.d&&a.ms!==b.ms)return a.ms-b.ms;return a.n<b.n?-1:1;});
+}
+function sendAll(m,msg){Object.keys(m.conns).forEach(function(id){try{m.conns[id].send(msg);}catch(e){}});}
+function lobbyList(m){return Object.keys(m.players).map(function(id){return {n:m.players[id].name,h:!!m.players[id].host};});}
+function lobbyBroadcast(m){sendAll(m,{t:'lobby',list:lobbyList(m)});mpRefresh(m);}
+function mpRefresh(m){
+  if(MP!==m)return;
+  if(R&&R.active&&R.multi)updateRank();else viewRoom();
+}
+function updateRank(){
+  var el=$('#rk');if(!el||!MP)return;
+  var rows=MP.role==='host'?rowsOf(MP):(MP.board||[]);
+  var k=rows.map(function(r){return r.n;}).indexOf(myName(MP));
+  el.textContent=k>-1&&rows.length>1?'Rank '+(k+1)+'/'+rows.length:'';
+}
+function hostRoom(){
+  if(!peerOK()){toast('Multiplayer could not load. Check your internet connection and refresh the page.');return;}
+  mpLeave();
+  var m=MP={role:'host',code:'',peer:null,conns:{},players:{host:hostPlayer()},phase:'lobby',teacherPlays:true,mode:'time',set:'',n:10,board:[],status:'Opening your room...',qs:null,played:false,awarded:false};
+  var tries=0;
+  (function open(){
+    m.code=newCode();
+    var p;
+    try{p=new Peer(PFX+m.code,{debug:0});}catch(e){toast('Could not start multiplayer on this page.');mpLeave();go('together');return;}
+    m.peer=p;
+    clearTimeout(m.timer);
+    m.timer=setTimeout(function(){if(MP===m&&m.status){toast('Could not open a room. Multiplayer works from the GitHub Pages link, with an internet connection.');mpLeave();go('together');}},12000);
+    p.on('open',function(){if(MP!==m)return;clearTimeout(m.timer);m.status='';viewRoom();});
+    p.on('error',function(err){
+      if(MP!==m)return;
+      if(err&&err.type==='unavailable-id'&&tries++<5){try{p.destroy();}catch(e){}open();return;}
+      toast('Could not open a room ('+(err&&err.type||'error')+'). Check your internet connection.');mpLeave();go('together');
+    });
+    p.on('connection',function(c){hostConn(m,c);});
+  })();
+  viewRoom();
+}
+function hostConn(m,c){
+  c.on('data',function(d){
+    if(MP!==m||!d)return;
+    if(d.t==='hello'){
+      if(m.phase!=='lobby'){c.send({t:'err',msg:'The game has already started. Wait for the next one.'});return;}
+      if(Object.keys(m.players).length>=16){c.send({t:'err',msg:'The room is full.'});return;}
+      var nm=String(d.name||'Player').replace(/[<>&"]/g,'').trim().slice(0,20)||'Player',base=nm,k=2;
+      while(nameTaken(m,nm))nm=base+' '+(k++);
+      m.conns[c.peer]=c;m.players[c.peer]={name:nm,s:0,i:0,d:false,ms:0,host:false};
+      c.send({t:'welcome',name:nm});
+      lobbyBroadcast(m);
+    }else if(d.t==='p'&&m.players[c.peer]&&m.phase==='play'){
+      var pl=m.players[c.peer];
+      pl.i=Math.max(0,Math.min(Math.floor(+d.i||0),m.n));pl.s=Math.max(0,Math.min(Math.floor(+d.s||0),m.n));pl.d=!!d.d;pl.ms=Math.max(0,+d.ms||0);
+      boardBroadcast(m);
+    }
+  });
+  c.on('close',function(){
+    if(MP!==m)return;
+    var pl=m.players[c.peer];delete m.conns[c.peer];
+    if(!pl)return;
+    if(m.phase==='lobby'){delete m.players[c.peer];lobbyBroadcast(m);}
+    else{pl.l=true;pl.d=true;if(m.phase==='play')boardBroadcast(m);else mpRefresh(m);}
+  });
+}
+function startGame(m){
+  var guests=Object.keys(m.players).filter(function(id){return !m.players[id].host;}).length;
+  if(!m.teacherPlays&&guests===0){toast('Wait for at least one player to join.');return;}
+  if(m.teacherPlays)m.players.host=m.players.host||hostPlayer();else delete m.players.host;
+  Object.keys(m.players).forEach(function(id){var p=m.players[id];p.s=0;p.i=0;p.d=false;p.ms=0;p.l=false;});
+  m.qs=build(m.mode,m.set);m.n=m.qs.length;m.phase='play';m.awarded=false;m.played=false;
+  sendAll(m,{t:'start',qs:m.qs,n:m.n});
+  if(m.teacherPlays)beginLocal(m);else viewRoom();
+}
+function beginLocal(m){
+  m.played=true;m.myDone=false;
+  R={mode:m.mode,set:m.set,qs:m.qs,i:0,score:0,streak:0,wrong:[],xp:0,answered:false,active:true,multi:true,t0:Date.now()};
+  renderQ();
+}
+function boardBroadcast(m){
+  var rows=rowsOf(m);m.board=rows;
+  if(rows.length&&rows.every(function(r){return r.d;})){finishGame(m);return;}
+  sendAll(m,{t:'board',rows:rows,n:m.n});
+  mpRefresh(m);
+}
+function finishGame(m){
+  m.phase='over';
+  var rows=rowsOf(m);m.board=rows;
+  sendAll(m,{t:'over',rows:rows,n:m.n});
+  if(R&&R.multi){R.active=false;R=null;}
+  mpOverAward(m);mpRefresh(m);
+}
+function mpOverAward(m){
+  if(m.awarded||!m.played)return;m.awarded=true;
+  var rows=m.role==='host'?rowsOf(m):m.board;
+  var k=rows.map(function(r){return r.n;}).indexOf(myName(m));
+  if(rows.length>1&&k>-1&&k<3){var b=[30,20,10][k];addXP(b);toast('Podium bonus: +'+b+' XP');}
+}
+function mpProgress(done){
+  if(!MP||!R||!R.multi)return;
+  var n=R.qs.length;
+  var msg={t:'p',i:Math.min(R.i+(done?0:1),n),s:R.score,d:!!done,ms:Date.now()-R.t0};
+  if(MP.role==='host'){var h=MP.players.host;if(h){h.i=msg.i;h.s=msg.s;h.d=msg.d;h.ms=msg.ms;}boardBroadcast(MP);}
+  else{try{MP.conn.send(msg);}catch(e){}}
+}
+function mpDone(){
+  R.active=false;
+  if(MP)MP.myDone=true;
+  mpProgress(true);
+  if(MP)viewRoom();
+}
+function joinRoom(code){
+  code=(code||'').toUpperCase().replace(/[^A-Z]/g,'');
+  if(code.length!==4){toast('Type the 4-letter room code.');return;}
+  if(!peerOK()){toast('Multiplayer could not load. Check your internet connection and refresh the page.');return;}
+  mpLeave();
+  var m=MP={role:'guest',code:code,peer:null,conn:null,phase:'connecting',list:[],board:[],n:0,myName:S.name,played:false,awarded:false};
+  var fail=function(msg){if(MP!==m)return;toast(msg);mpLeave();go('together');};
+  m.timer=setTimeout(function(){if(MP===m&&m.phase==='connecting')fail('Could not reach that room. Check the code and your internet connection.');},12000);
+  var p;
+  try{p=new Peer({debug:0});}catch(e){fail('Could not start multiplayer on this page.');return;}
+  m.peer=p;
+  p.on('open',function(){
+    if(MP!==m)return;
+    var c=p.connect(PFX+code,{reliable:true});m.conn=c;
+    c.on('open',function(){c.send({t:'hello',name:S.name});});
+    c.on('data',function(d){guestMsg(m,d);});
+    c.on('close',function(){fail('The room was closed.');});
+  });
+  p.on('error',function(err){fail(err&&err.type==='peer-unavailable'?'Room not found. Check the code with your teacher.':'Connection problem ('+(err&&err.type||'error')+').');});
+  viewRoom();
+}
+function guestMsg(m,d){
+  if(MP!==m||!d)return;
+  if(d.t==='welcome'){clearTimeout(m.timer);m.phase='lobby';m.myName=d.name;}
+  else if(d.t==='err'){clearTimeout(m.timer);toast(d.msg);mpLeave();go('together');return;}
+  else if(d.t==='lobby'){m.list=d.list||[];if(m.phase!=='connecting'){m.phase='lobby';R=null;}}
+  else if(d.t==='start'){
+    m.phase='play';m.n=d.n;m.awarded=false;m.played=true;m.myDone=false;m.board=[];
+    R={mode:'mp',set:'',qs:d.qs,i:0,score:0,streak:0,wrong:[],xp:0,answered:false,active:true,multi:true,t0:Date.now()};
+    renderQ();return;
+  }
+  else if(d.t==='board'){m.board=d.rows||[];m.n=d.n;}
+  else if(d.t==='over'){m.board=d.rows||[];m.phase='over';if(R&&R.multi){R.active=false;R=null;}mpOverAward(m);}
+  mpRefresh(m);
+}
+function pills(list){return '<div>'+list.map(function(x){return '<span class="pill">'+esc(x.n)+(x.h?' (teacher)':'')+'</span>';}).join('')+'</div>';}
+function boardRows(rows,n,me){
+  return '<ol class="board">'+rows.map(function(r,k){
+    return '<li class="brow'+(r.n===me?' me':'')+'"><span class="bk">'+(k+1)+'</span><span class="bn">'+esc(r.n)+(r.h?'<small>teacher</small>':'')+(r.l?'<small>left</small>':'')+'</span><span class="bp"><i style="width:'+Math.round(Math.min(1,r.i/(n||1))*100)+'%"></i></span><b>'+r.s+'</b></li>';
+  }).join('')+'</ol>';
+}
+function viewTogether(){
+  app.innerHTML=back()+'<h1 class="h1">Play Together</h1><p class="lead">Everyone answers the same questions at the same time and a live scoreboard shows who is ahead. The teacher opens a room, and students join with a 4-letter code.</p>'+
+   '<div class="grid"><section class="sec" style="--c:var(--prperf)"><h2>Open a room</h2><p>For the teacher. You can play too.</p><button class="btn" data-act="host">Open a room</button></section>'+
+   '<section class="sec" style="--c:var(--psimple)"><h2>Join a room</h2><form id="jf" autocomplete="off"><div class="fields"><label class="field">Room code<input id="jc" type="text" maxlength="4" placeholder="ABCD" autocapitalize="characters" style="text-transform:uppercase"></label></div><button class="btn" type="submit">Join</button></form></section></div>'+
+   '<p class="note">Playing as <b>'+esc(S.name)+'</b>. Everyone needs the internet and the same web link of this game.</p>';
+}
+function waitView(msg){return '<h1 class="h1">'+msg+'</h1><div class="actions"><button class="btn alt" data-act="home">Cancel</button></div>';}
+function viewRoom(){
+  var m=MP;if(!m){go('together');return;}
+  var h='';
+  if(m.role==='host'){
+    if(m.status)h=waitView(m.status);
+    else if(m.phase==='lobby'){
+      var link=location.href.split('#')[0].split('?')[0];
+      var opts=[['time|','Time Machine'],['hunt|','Error Hunter'],['duel|mix','Verb Duel: irregular verbs'],['duel|reg','Verb Duel: regular -ed spelling'],['sound|','Sound Lab'],['boss|','Mixed Challenge']];
+      var cur=m.mode+'|'+m.set;
+      h='<h1 class="h1">Your room</h1><div class="roomcode" aria-label="Room code">'+m.code+'</div>'+
+        '<p class="lead">Students open <b>'+esc(link)+'</b>, choose Play Together, then Join a room, and type this code.</p>'+
+        '<section class="sec" style="--c:var(--psimple)"><h2>Players ('+Object.keys(m.players).length+')</h2>'+pills(lobbyList(m))+'</section>'+
+        '<section class="sec" style="--c:var(--prperf)"><h2>Game</h2><label class="field">Choose a game<select id="mpmode">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></label><label class="chk"><input type="checkbox" id="mptp"'+(m.teacherPlays?' checked':'')+'> I want to play too</label></section>'+
+        '<div class="actions"><button class="btn" data-act="mpstart">Start game</button><button class="btn alt" data-act="home">Close room</button></div>';
+    }else h=boardView(m);
+  }else{
+    if(m.phase==='connecting')h=waitView('Joining room '+esc(m.code)+'...');
+    else if(m.phase==='lobby')h='<h1 class="h1">Room '+esc(m.code)+'</h1><p class="lead">You are in as <b>'+esc(m.myName)+'</b>. Waiting for the teacher to start the game.</p><section class="sec" style="--c:var(--psimple)"><h2>Players ('+m.list.length+')</h2>'+pills(m.list)+'</section><div class="actions"><button class="btn alt" data-act="home">Leave room</button></div>';
+    else h=boardView(m);
+  }
+  app.innerHTML=h;
+}
+function boardView(m){
+  var rows=m.role==='host'?rowsOf(m):(m.board||[]);
+  var me=myName(m),over=m.phase==='over';
+  var title=over?'Final results':(m.played&&m.myDone?'You finished!':(m.played?'Live scoreboard':'Live scoreboard (you are watching)'));
+  var sub=over?'':(m.played&&m.myDone?'<p class="lead">Waiting for the others to finish.</p>':'');
+  var k=rows.map(function(r){return r.n;}).indexOf(me);
+  if(over&&m.played&&k>-1&&rows.length>1)sub='<p class="lead">You finished <b>'+(k+1)+(['st','nd','rd'][k]||'th')+'</b> of '+rows.length+'.</p>';
+  var btns=m.role==='host'?(over?'<button class="btn" data-act="mpagain">Play again</button>':'<button class="btn" data-act="mpend">End game now</button>')+'<button class="btn alt" data-act="home">Close room</button>':'<button class="btn alt" data-act="home">Leave room</button>';
+  if(m.role==='guest'&&over)sub+='<p class="note">Waiting for the teacher to start another game.</p>';
+  return '<h1 class="h1">'+title+'</h1>'+sub+boardRows(rows,m.n,me)+'<div class="actions">'+btns+'</div>';
+}
+
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',function(e){
   var t=e.target.closest('[data-act]');if(!t)return;
@@ -662,9 +891,13 @@ document.addEventListener('click',function(e){
   else if(a==='flip'){F.flipped=true;renderCard();}
   else if(a==='got'||a==='again'){cardDone(a==='got');}
   else if(a==='opt')answerChoice(+t.dataset.i);
-  else if(a==='next'){R.i++;if(R.i>=R.qs.length)results();else{renderQ();window.scrollTo(0,0);}}
+  else if(a==='next'){R.i++;if(R.i>=R.qs.length){if(R.multi)mpDone();else results();}else{renderQ();window.scrollTo(0,0);}}
   else if(a==='again2')startRound(R?R.mode:'time',R?R.set:'');
   else if(a==='say')say(t.dataset.say);
+  else if(a==='host')hostRoom();
+  else if(a==='mpstart'&&MP)startGame(MP);
+  else if(a==='mpend'&&MP)finishGame(MP);
+  else if(a==='mpagain'&&MP){MP.phase='lobby';MP.players.host=MP.teacherPlays?hostPlayer():undefined;if(!MP.teacherPlays)delete MP.players.host;Object.keys(MP.players).forEach(function(id){if(MP.players[id].l)delete MP.players[id];});lobbyBroadcast(MP);}
   else if(a==='login')go('login');
   else if(a==='code')go('code');
   else if(a==='loginAs')login(t.dataset.name);
@@ -684,6 +917,7 @@ document.addEventListener('click',function(e){
 });
 app.addEventListener('submit',function(e){
   if(e.target.id==='tf'){e.preventDefault();answerType();}
+  else if(e.target.id==='jf'){e.preventDefault();joinRoom($('#jc').value);}
   else if(e.target.id==='nf'){
     e.preventDefault();
     var n=$('#nn').value.replace(/[<>&"]/g,'').trim().slice(0,20);
@@ -699,6 +933,11 @@ function cardDone(got){
   else{S.cards[c.id]=0;F.again++;if(!F.re[c.id]){F.re[c.id]=1;F.q.push(c);}}
   save();F.i++;F.flipped=false;renderCard();
 }
+app.addEventListener('change',function(e){
+  if(!MP||MP.role!=='host')return;
+  if(e.target.id==='mpmode'){var v=e.target.value.split('|');MP.mode=v[0];MP.set=v[1];}
+  else if(e.target.id==='mptp'){MP.teacherPlays=e.target.checked;if(MP.teacherPlays)MP.players.host=MP.players.host||hostPlayer();else delete MP.players.host;lobbyBroadcast(MP);}
+});
 document.addEventListener('keydown',function(e){
   var tag=(e.target.tagName||'');
   if(F&&F.active){
